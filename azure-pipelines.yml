@@ -62,7 +62,7 @@ stages:
           - task: AzureWebAppContainer@1
             displayName: 'Deploy to App Service'
             inputs:
-              azureSubscription: 'bestrong_azure_connection'
+              azureSubscription: 'bestrong-azure-connection'
               appName: 'bestrong-app-service-bs2'
               resourceGroupName: 'bestrong-rg'
               containers: 'bestrong1acr1.azurecr.io/bestrong-web-api:latest'
