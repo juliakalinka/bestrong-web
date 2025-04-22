@@ -47,4 +47,3 @@ stages:
               addBaseImageData: false
               arguments: '--no-cache'
               buildContext: '$(Build.SourcesDirectory)'
-
