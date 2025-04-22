@@ -18,8 +18,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  acrName: 'bestrong1acr1.azurecr.io'
-  imageName: 'bestrong-web-api'
+  imageRepository: 'bestrong1acr1.azurecr.io/bestrong-web-api'
   tag: '$(Build.BuildId)'
   appServiceName: 'bestrong-app-service-bs2'
   resourceGroupName: 'bestrong-rg'
@@ -43,13 +42,14 @@ stages:
             displayName: 'Login to ACR'
             inputs:
               command: login
-              containerRegistry: 'bestrong-docker-acr' # Це має бути service connection до твого ACR
+              containerRegistry: 'bestrong-docker-acr'
+              addPipelineData: true
 
           - task: Docker@2
             displayName: 'Build and Push Docker Image'
             inputs:
               command: buildAndPush
-              repository: '$(acrName)/$(imageName)'
+              repository: '$(imageRepository)'
               dockerfile: '$(System.DefaultWorkingDirectory)/Dockerfile'
               tags: |
                 $(tag)
@@ -79,8 +79,8 @@ stages:
                 az webapp config container set \
                   --name $(appServiceName) \
                   --resource-group $(resourceGroupName) \
-                  --docker-custom-image-name $(acrName)/$(imageName):$(tag) \
-                  --docker-registry-server-url https://$(acrName)
+                  --docker-custom-image-name $(imageRepository):$(tag) \
+                  --docker-registry-server-url https://$(imageRepository | cut -d'/' -f1)
 
                 az webapp restart \
                   --name $(appServiceName) \
