@@ -18,7 +18,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  imageRepository: 'bestrong1acr1.azurecr.io/bestrong-web-api'
+  imageRepository: 'bestrong1acr1.azurecr.io/'
   tag: '$(Build.BuildId)'
   appServiceName: 'bestrong-app-service-bs2'
   resourceGroupName: 'bestrong-rg'
