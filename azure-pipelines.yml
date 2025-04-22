@@ -32,3 +32,47 @@ stages:
               echo "Pushing Docker image..."
               docker push bestrong1acr1.azurecr.io/bestrong-web-api:latest
             displayName: Docker Login, Build & Push
+
+  - stage: Deploy
+    displayName: Deploy to Azure App Service
+    dependsOn: BuildAndPush
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: DeployJob
+        displayName: Deploy
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+
+          - task: DownloadSecureFile@1
+            name: envFile
+            displayName: 'Download .env file'
+            inputs:
+              secureFile: '.env'
+
+          - script: |
+              echo "Loading environment variables from .env file..."
+              export $(cat $(envFile.secureFilePath) | grep -v '^#' | xargs)
+
+              echo "Logging into Azure..."
+              az login --service-principal \
+                -u $TF_VAR_client_id \
+                -p $TF_VAR_client_secret \
+                --tenant $TF_VAR_tenant_id
+
+              echo "Deploying to App Service..."
+              az webapp config container set \
+                --name $(APP_SERVICE_NAME) \
+                --resource-group $(RESOURCE_GROUP_NAME) \
+                --docker-custom-image-name bestrong1acr1.azurecr.io/bestrong-web-api:latest \
+                --docker-registry-server-url https://bestrong1acr1.azurecr.io \
+                --docker-registry-server-user $(DOCKER_USERNAME) \
+                --docker-registry-server-password $(DOCKER_PASSWORD)
+
+              az webapp restart \
+                --name $(APP_SERVICE_NAME) \
+                --resource-group $(RESOURCE_GROUP_NAME)
+
+              echo "Deployment successfully completed!"
+            displayName: Deploy to App Service
