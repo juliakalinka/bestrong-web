@@ -2,6 +2,11 @@ trigger:
   branches:
     include:
       - main
+  paths:
+    include:
+      - 'ASPNETCore-WebAPI-Sample/**'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
 
 pr:
   branches:
@@ -75,6 +80,20 @@ stages:
                 --docker-registry-server-url https://bestrong1acr1.azurecr.io \
                 --docker-registry-server-user $(DOCKER_USERNAME) \
                 --docker-registry-server-password $(DOCKER_PASSWORD)
+
+              # Встановлюємо додаткові налаштування
+              az webapp config set \
+                --name $(APP_SERVICE_NAME) \
+                --resource-group $(RESOURCE_GROUP_NAME) \
+                --linux-fx-version "DOCKER|bestrong1acr1.azurecr.io/bestrong-web-api:latest" \
+                --always-on true \
+                --http20-enabled true
+
+              # Налаштовуємо CORS та інші важливі параметри
+              az webapp cors add \
+                --name $(APP_SERVICE_NAME) \
+                --resource-group $(RESOURCE_GROUP_NAME) \
+                --allowed-origins "*"
 
               az webapp restart \
                 --name $(APP_SERVICE_NAME) \
