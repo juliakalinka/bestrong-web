@@ -9,9 +9,9 @@ pr:
       - main
 
 variables:
-  dockerRegistryServiceConnection: 'bestrong-docker-acr'
+  dockerRegistryServiceConnection: 'bestrong-acr-connection'
   imageRepository: 'bestrong-web-api'
-  containerRegistry: 'bestrong-acr-connection'
+  containerRegistry: 'bestrong-docker-acr'
   dockerfilePath: 'Dockerfile'
   tag: '$(Build.BuildId)'
 
