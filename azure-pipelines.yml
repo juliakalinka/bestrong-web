@@ -9,7 +9,7 @@ pr:
       - main
 
 variables:
-  dockerRegistryServiceConnection: 'bestrong-acr-connection'
+  dockerRegistryServiceConnection: 'bestrong-docker-acr'
   imageRepository: 'bestrong-web-api'
   containerRegistry: 'bestrong-docker-acr'
   dockerfilePath: 'Dockerfile'
