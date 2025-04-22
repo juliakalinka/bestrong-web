@@ -49,14 +49,12 @@ stages:
             displayName: 'Build and Push Docker Image'
             inputs:
               command: buildAndPush
-              repository: '$(imageRepository)'
+              repository: 'bestrong-web-api'
               dockerfile: '$(System.DefaultWorkingDirectory)/Dockerfile'
+              containerRegistry: 'bestrong-docker-acr'
               tags: |
-                $(tag)
-              buildContext: '$(System.DefaultWorkingDirectory)'
-              arguments: |
-                --build-arg ASPNETCORE_ENVIRONMENT=Production
-                --build-arg DOTNET_ENVIRONMENT=Production
+                $(Build.BuildId)
+                latest
 
   - stage: Deploy
     displayName: 'Deploy to Azure App Service'
