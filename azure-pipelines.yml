@@ -28,7 +28,7 @@ stages:
             displayName: 'Login to ACR'
             inputs:
               command: login
-              containerRegistry: $(dockerRegistryServiceConnection)
+              containerRegistry: $(dockerRegistryServiceConnection)  # Ensure this is correctly set to ACR service connection
 
           - task: Docker@2
             displayName: 'Build Docker Image'
@@ -36,7 +36,7 @@ stages:
               command: build
               dockerfile: $(dockerfilePath)
               repository: $(imageRepository)
-              containerRegistry: $(containerRegistry)
+              containerRegistry: $(containerRegistry)  # Ensure correct connection
               tags: |
                 $(tag)
                 latest
@@ -46,7 +46,7 @@ stages:
             inputs:
               command: push
               repository: $(imageRepository)
-              containerRegistry: $(containerRegistry)
+              containerRegistry: $(containerRegistry)  # Ensure correct connection
               tags: |
                 $(tag)
                 latest
