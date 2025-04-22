@@ -7,7 +7,7 @@ trigger:
       - 'ASPNETCore-WebAPI-Sample/**'
       - 'Dockerfile'
       - 'docker-compose.yml'
-      - '.azure-pipelines/app-pipeline.yml'
+      - 'azure-pipelines.yml'
 
 pr:
   branches:
@@ -37,7 +37,7 @@ stages:
         steps:
           - checkout: self
           
-          # Збірка контейнера
+          # Збірка контейнера для тестування
           - task: Docker@2
             displayName: 'Build Docker Image'
             inputs:
