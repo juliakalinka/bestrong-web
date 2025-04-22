@@ -13,37 +13,22 @@ variables:
 
 stages:
   - stage: BuildAndPush
+    displayName: Build and Push Docker image
     jobs:
-      - job: BuildAndPushJob
+      - job: DockerJob
+        displayName: Build & Push
         pool:
-          vmImage: 'ubuntu-latest'
+          vmImage: ubuntu-latest
         steps:
           - checkout: self
 
-          - task: DockerInstaller@0
-            displayName: Install Docker
+          - script: |
+              echo "Logging into ACR..."
+              echo $(DOCKER_PASSWORD) | docker login bestrong1acr1.azurecr.io -u $(DOCKER_USERNAME) --password-stdin
 
-          - task: Docker@2
-            displayName: Docker Login
-            inputs:
-              command: login
-              containerRegistry: ''
-              repository: ''
-              dockerRegistryEndpoint: ''
-              username: $(DOCKER_USERNAME)
-              password: $(DOCKER_PASSWORD)
+              echo "Building Docker image..."
+              docker build -t bestrong1acr1.azurecr.io/bestrong-web-api:latest .
 
-          - task: Docker@2
-            displayName: Build and Push Docker Image
-            inputs:
-              command: buildAndPush
-              repository: bestrong-web-api
-              dockerfile: $(Build.SourcesDirectory)/Dockerfile
-              tags: |
-                latest
-              containerRegistry: ''
-              repository: bestrong1acr1.azurecr.io/bestrong-web-api
-              addPipelineData: false
-              addBaseImageData: false
-              arguments: '--no-cache'
-              buildContext: '$(Build.SourcesDirectory)'
+              echo "Pushing Docker image..."
+              docker push bestrong1acr1.azurecr.io/bestrong-web-api:latest
+            displayName: Docker Login, Build & Push
