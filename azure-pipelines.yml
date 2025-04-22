@@ -1,28 +1,12 @@
 trigger:
-  batch: true
   branches:
     include:
       - main
-  paths:
-    include:
-      - '*'
-    exclude:
-      - '*.md'
-      - '.gitignore'
-      - '.git*'
 
 pr:
-  autoCancel: true
   branches:
     include:
       - main
-  paths:
-    include:
-      - '*'
-    exclude:
-      - '*.md'
-      - '.gitignore'
-      - '.git*'
 
 variables:
   - group: terraform-variables
@@ -86,18 +70,6 @@ stages:
                 --docker-registry-server-url https://bestrong1acr1.azurecr.io \
                 --docker-registry-server-user $(DOCKER_USERNAME) \
                 --docker-registry-server-password $(DOCKER_PASSWORD)
-
-              az webapp config set \
-                --name $(APP_SERVICE_NAME) \
-                --resource-group $(RESOURCE_GROUP_NAME) \
-                --linux-fx-version "DOCKER|bestrong1acr1.azurecr.io/bestrong-web-api:latest" \
-                --always-on true \
-                --http20-enabled true
-
-              az webapp cors add \
-                --name $(APP_SERVICE_NAME) \
-                --resource-group $(RESOURCE_GROUP_NAME) \
-                --allowed-origins "*"
 
               az webapp restart \
                 --name $(APP_SERVICE_NAME) \
