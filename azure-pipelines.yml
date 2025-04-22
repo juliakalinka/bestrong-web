@@ -32,26 +32,22 @@ stages:
         steps:
           - checkout: self
 
-          - task: DownloadSecureFile@1
-            name: envFile
-            displayName: 'Download .env file'
+          # Логін до ACR за допомогою змінних
+          - task: Docker@2
+            displayName: 'Login to ACR'
             inputs:
-              secureFile: '.env'
+              command: login
+              containerRegistry: 'bestrong-docker-acr'
+              dockerRegistryEndpoint: '$(DOCKER_USERNAME)'  # Змінна з Terraform
+              password: '$(DOCKER_PASSWORD)'  # Змінна з Terraform
 
-          - script: |
-              echo "Loading environment variables from .env file..."
-              export $(cat $(envFile.secureFilePath) | xargs)
-              echo "Logging in to ACR..."
-              docker login bestrong1acr1.azurecr.io -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-            displayName: 'Docker Login with .env credentials'
-
+          # Створення та пуш Docker образу
           - task: Docker@2
             displayName: 'Build and Push Docker Image'
             inputs:
               command: buildAndPush
-              repository: 'bestrong-web-api'
+              repository: '$(imageRepository)'
               dockerfile: '$(System.DefaultWorkingDirectory)/Dockerfile'
-              containerRegistry: 'bestrong1acr1.azurecr.io'
               tags: |
                 $(tag)
               buildContext: '$(System.DefaultWorkingDirectory)'
