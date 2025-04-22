@@ -2,21 +2,11 @@ trigger:
   branches:
     include:
       - main
-  paths:
-    include:
-      - 'ASPNETCore-WebAPI-Sample/**'
-      - 'Dockerfile'
-      - 'docker-compose.yml'
 
 pr:
   branches:
     include:
       - main
-  paths:
-    include:
-      - 'ASPNETCore-WebAPI-Sample/**'
-      - 'Dockerfile'
-      - 'docker-compose.yml'
 
 variables:
   - group: terraform-variables
@@ -81,7 +71,6 @@ stages:
                 --docker-registry-server-user $(DOCKER_USERNAME) \
                 --docker-registry-server-password $(DOCKER_PASSWORD)
 
-              # Встановлюємо додаткові налаштування
               az webapp config set \
                 --name $(APP_SERVICE_NAME) \
                 --resource-group $(RESOURCE_GROUP_NAME) \
@@ -89,7 +78,6 @@ stages:
                 --always-on true \
                 --http20-enabled true
 
-              # Налаштовуємо CORS та інші важливі параметри
               az webapp cors add \
                 --name $(APP_SERVICE_NAME) \
                 --resource-group $(RESOURCE_GROUP_NAME) \
