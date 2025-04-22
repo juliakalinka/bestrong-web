@@ -38,19 +38,20 @@ stages:
             inputs:
               secureFile: '.env'
 
-          - task: Docker@2
-            displayName: 'Login to ACR'
-            inputs:
-              command: login
-              containerRegistry: 'bestrong-docker-acr'
-              addPipelineData: true
+          - script: |
+              echo "Loading environment variables from .env file..."
+              export $(cat $(envFile.secureFilePath) | xargs)
+              echo "Logging in to ACR..."
+              docker login bestrong1acr1.azurecr.io -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+            displayName: 'Docker Login with .env credentials'
 
           - task: Docker@2
             displayName: 'Build and Push Docker Image'
             inputs:
               command: buildAndPush
-              repository: '$(imageRepository)'
+              repository: 'bestrong-web-api'
               dockerfile: '$(System.DefaultWorkingDirectory)/Dockerfile'
+              containerRegistry: 'bestrong1acr1.azurecr.io'
               tags: |
                 $(tag)
               buildContext: '$(System.DefaultWorkingDirectory)'
