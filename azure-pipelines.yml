@@ -54,8 +54,9 @@ stages:
               tags: |
                 $(tag)
               buildContext: '$(System.DefaultWorkingDirectory)'
-              arguments: '--build-arg ENV_FILE=$(envFile.secureFilePath)'
-              containerRegistry: 'bestrong-docker-acr'
+              arguments: |
+                --build-arg ASPNETCORE_ENVIRONMENT=Production
+                --build-arg DOTNET_ENVIRONMENT=Production
 
   - stage: Deploy
     displayName: 'Deploy to Azure App Service'

@@ -12,7 +12,6 @@ RUN dotnet publish "SampleWebApiAspNetCore.csproj" -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-COPY .env ./
 ENV ASPNETCORE_ENVIRONMENT=Production
 EXPOSE 80
 EXPOSE 443
