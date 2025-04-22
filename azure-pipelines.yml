@@ -11,7 +11,7 @@ pr:
 variables:
   dockerRegistryServiceConnection: 'bestrong-docker-acr'
   imageRepository: 'bestrong-web-api'
-  containerRegistry: 'bestrong-'
+  containerRegistry: 'bestrong-docker-acr'
   dockerfilePath: 'Dockerfile'
   tag: '$(Build.BuildId)'
 
@@ -66,4 +66,3 @@ stages:
               appName: 'bestrong-app-service-bs2'
               resourceGroupName: 'bestrong-rg'
               containers: 'bestrong1acr1.azurecr.io/bestrong-web-api:latest'
-# Test
