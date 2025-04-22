@@ -17,116 +17,55 @@ pr:
 pool:
   vmImage: 'ubuntu-latest'
 
-# Variables for pipeline configuration
 variables:
-  - name: imageRepository
-    value: 'bestrong-web-api'
-  - name: tag
-    value: '$(Build.BuildId)'
-  - name: appServiceName
-    value: 'bestrong-app-service'
-  - name: resourceGroupName
-    value: 'bestrong-rg'
-  - name: acrName
-    value: 'bestrongacr'
+  imageRepository: 'bestrong-web-api'
+  tag: '$(Build.BuildId)'
+  acrName: 'bestrong1acr1'
+  acrLoginServer: 'bestrong1acr1.azurecr.io'
+  appServiceName: 'bestrong-app-service'
+  resourceGroupName: 'bestrong-rg'
 
 stages:
-  - stage: Diagnostics
-    displayName: 'Pipeline Diagnostics'
+  - stage: Build
     jobs:
-      - job: DiagnosticJob
-        displayName: 'Diagnostic Tests'
+      - job: DockerBuildPush
         steps:
           - checkout: self
-          
-          - script: |
-              echo "=== PIPELINE DIAGNOSTICS ==="
-              echo "Branch: $(Build.SourceBranch)"
-              echo "Build ID: $(Build.BuildId)"
-              echo "Build Number: $(Build.BuildNumber)"
-            displayName: 'Basic Information'
-          
-          - task: AzureCLI@2
-            displayName: 'Azure Resource Diagnostics'
-            inputs:
-              azureSubscription: 'bestrong-azure-connection'
-              scriptType: 'bash'
-              scriptLocation: 'inlineScript'
-              inlineScript: |
-                echo "=== AZURE RESOURCE DIAGNOSTICS ==="
-                echo "Testing Azure CLI connectivity..."
-                az account show --query name
-                
-                echo "Checking Resource Group..."
-                az group show -n $(resourceGroupName) --query name || echo "Resource Group not found!"
-                
-                echo "Checking App Service..."
-                az webapp list -g $(resourceGroupName) --query "[].name" -o tsv || echo "No App Services found!"
-                az webapp show -n $(appServiceName) -g $(resourceGroupName) --query name || echo "App Service not found!"
-                
-                echo "Checking Container Registry..."
-                az acr list --query "[].name" -o tsv || echo "No ACR found!"
-                az acr show -n $(acrName) --query name || echo "ACR not found!"
-                
-                echo "Testing Docker build..."
-                docker build -t test-image -f $(System.DefaultWorkingDirectory)/Dockerfile . && echo "Docker build successful!" || echo "Docker build failed!"
-                
-                echo "=== SERVICE PRINCIPAL PERMISSIONS ==="
-                echo "Resource Group permissions:"
-                az role assignment list --scope /subscriptions/$(az account show --query id -o tsv)/resourceGroups/$(resourceGroupName) --query "[].{principalName:principalName, roleDefinitionName:roleDefinitionName}" -o table || echo "Cannot check permissions!"
-  
-  - stage: Validate
-    displayName: 'Validate Application'
-    dependsOn: Diagnostics
-    condition: succeeded()
-    jobs:
-      - job: BuildAndTest
-        displayName: 'Build and Test'
-        steps:
-          - checkout: self
-          
+
           - task: Docker@2
-            displayName: 'Build Docker Image'
+            displayName: 'Login to ACR'
             inputs:
-              command: build
-              dockerfile: '$(System.DefaultWorkingDirectory)/Dockerfile'
-              tags: '$(tag)'
-              buildContext: $(System.DefaultWorkingDirectory)
-  
+              command: login
+              containerRegistry: 'bestrong-acr-connection'
+
+          - task: Docker@2
+            displayName: 'Build and Push Image to ACR'
+            inputs:
+              repository: '$(acrLoginServer)/$(imageRepository)'
+              command: 'buildAndPush'
+              Dockerfile: 'Dockerfile'
+              tags: |
+                $(tag)
+
   - stage: Deploy
-    displayName: 'Deploy Application'
-    dependsOn: Validate
+    dependsOn: Build
     condition: succeeded()
     jobs:
-      - job: DeployImage
-        displayName: 'Build and Deploy Image'
+      - job: DeployToAppService
         steps:
-          - checkout: self
-          
           - task: AzureCLI@2
-            displayName: 'Azure Login and Push Docker Image'
+            displayName: 'Deploy to Azure App Service'
             inputs:
               azureSubscription: 'bestrong-azure-connection'
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
-                echo "Starting deployment process..."
-                echo "Building Docker image..."
-                docker build -t $(acrName).azurecr.io/$(imageRepository):$(tag) -t $(acrName).azurecr.io/$(imageRepository):latest .
-                
-                echo "Logging in to ACR..."
-                az acr login --name $(acrName)
-                
-                echo "Pushing Docker image to ACR..."
-                docker push $(acrName).azurecr.io/$(imageRepository):$(tag)
-                docker push $(acrName).azurecr.io/$(imageRepository):latest
-                
-                echo "Docker image pushed successfully"
-                
-                echo "Setting Web App settings..."
-                az webapp config set -g $(resourceGroupName) -n $(appServiceName) --linux-fx-version "DOCKER|$(acrName).azurecr.io/$(imageRepository):$(tag)"
-                
-                echo "Restarting Web App..."
-                az webapp restart -g $(resourceGroupName) -n $(appServiceName)
-                
-                echo "Deployment complete!" 
+                az webapp config container set \
+                  --name $(appServiceName) \
+                  --resource-group $(resourceGroupName) \
+                  --docker-custom-image-name $(acrLoginServer)/$(imageRepository):$(tag) \
+                  --docker-registry-server-url https://$(acrLoginServer)
+
+                az webapp restart \
+                  --name $(appServiceName) \
+                  --resource-group $(resourceGroupName)
