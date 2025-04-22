@@ -1,12 +1,28 @@
 trigger:
+  batch: true
   branches:
     include:
       - main
+  paths:
+    include:
+      - '*'
+    exclude:
+      - '*.md'
+      - '.gitignore'
+      - '.git*'
 
 pr:
+  autoCancel: true
   branches:
     include:
       - main
+  paths:
+    include:
+      - '*'
+    exclude:
+      - '*.md'
+      - '.gitignore'
+      - '.git*'
 
 variables:
   - group: terraform-variables
