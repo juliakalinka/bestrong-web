@@ -7,6 +7,11 @@ pr:
   branches:
     include:
       - main
+  paths:
+    include:
+      - 'ASPNETCore-WebAPI-Sample/**'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
 
 variables:
   - group: terraform-variables
@@ -32,6 +37,7 @@ stages:
               echo "Pushing Docker image..."
               docker push bestrong1acr1.azurecr.io/bestrong-web-api:latest
             displayName: Docker Login, Build & Push
+            condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
   - stage: Deploy
     displayName: Deploy to Azure App Service
