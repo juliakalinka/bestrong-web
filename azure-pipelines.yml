@@ -75,4 +75,4 @@ stages:
                   --name $(appServiceName) \
                   --resource-group $(resourceGroupName)
 
-                echo "Deployment successfully completed!"
+                echo "Deployment successfully completed!!!"
