@@ -48,6 +48,7 @@ stages:
   
   - stage: Deploy
     displayName: 'Deploy Application'
+    dependsOn: Validate
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - job: DeployImage
@@ -62,12 +63,17 @@ stages:
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
+                echo "Building Docker image..."
                 docker build -t $(acrName).azurecr.io/$(imageRepository):$(tag) -t $(acrName).azurecr.io/$(imageRepository):latest .
                 
+                echo "Logging in to ACR..."
                 az acr login --name $(acrName)
                 
+                echo "Pushing Docker image to ACR..."
                 docker push $(acrName).azurecr.io/$(imageRepository):$(tag)
                 docker push $(acrName).azurecr.io/$(imageRepository):latest
+                
+                echo "Docker image pushed successfully"
           
           - task: AzureWebAppContainer@1
             displayName: 'Deploy to Azure App Service'
