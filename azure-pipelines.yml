@@ -7,62 +7,78 @@ pr:
   branches:
     include:
       - main
+  paths:
+    include:
+      - 'ASPNETCore-WebAPI-Sample/**'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
 
 variables:
-  dockerRegistryServiceConnection: 'bestrong-docker-acr'
-  imageRepository: 'bestrong-web-api'
-  containerRegistry: 'bestrong-docker-acr'
-  dockerfilePath: 'Dockerfile'
-  tag: '$(Build.BuildId)'
+  - group: terraform-variables
 
 stages:
   - stage: BuildAndPush
-    displayName: 'Build and Push Docker image'
+    displayName: Build and Push Docker image
     jobs:
-      - job: Build
-        displayName: 'Build and Push'
+      - job: DockerJob
+        displayName: Build & Push
         pool:
-          vmImage: 'ubuntu-latest'
+          vmImage: ubuntu-latest
         steps:
-          - task: Docker@2
-            displayName: 'Login to ACR'
-            inputs:
-              command: login
-              containerRegistry: $(dockerRegistryServiceConnection)
+          - checkout: self
 
-          - task: Docker@2
-            displayName: 'Build Docker Image'
-            inputs:
-              command: build
-              dockerfile: $(dockerfilePath)
-              repository: $(imageRepository)
-              containerRegistry: $(containerRegistry)
-              tags: |
-                $(tag)
-                latest
+          - script: |
+              echo "Logging into ACR..."
+              echo $(DOCKER_PASSWORD) | docker login bestrong1acr1.azurecr.io -u $(DOCKER_USERNAME) --password-stdin
 
-          - task: Docker@2
-            displayName: 'Push Docker Image'
-            inputs:
-              command: push
-              repository: $(imageRepository)
-              containerRegistry: $(containerRegistry)
-              tags: |
-                $(tag)
-                latest
+              echo "Building Docker image..."
+              docker build -t bestrong1acr1.azurecr.io/bestrong-web-api:latest .
+
+              echo "Pushing Docker image..."
+              docker push bestrong1acr1.azurecr.io/bestrong-web-api:latest
+            displayName: Docker Login, Build & Push
+            condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
   - stage: Deploy
-    displayName: 'Deploy to Azure App Service'
+    displayName: Deploy to Azure App Service
     dependsOn: BuildAndPush
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
-      - job: Deploy
+      - job: DeployJob
+        displayName: Deploy
         pool:
-          vmImage: 'ubuntu-latest'
+          vmImage: ubuntu-latest
         steps:
-          - task: AzureWebAppContainer@1
-            displayName: 'Deploy to App Service'
+          - checkout: self
+
+          - task: DownloadSecureFile@1
+            name: envFile
+            displayName: 'Download .env file'
             inputs:
-              azureSubscription: 'bestrong-rg-connection'
-              appName: 'bestrong-app-service-bs2'
-              resourceGroupName: 'bestrong-rg'
-              containers: 'bestrong1acr1.azurecr.io/bestrong-web-api:latest'
+              secureFile: '.env'
+
+          - script: |
+              echo "Loading environment variables from .env file..."
+              export $(cat $(envFile.secureFilePath) | grep -v '^#' | xargs)
+
+              echo "Logging into Azure..."
+              az login --service-principal \
+                -u $TF_VAR_client_id \
+                -p $TF_VAR_client_secret \
+                --tenant $TF_VAR_tenant_id
+
+              echo "Deploying to App Service..."
+              az webapp config container set \
+                --name $(APP_SERVICE_NAME) \
+                --resource-group $(RESOURCE_GROUP_NAME) \
+                --docker-custom-image-name bestrong1acr1.azurecr.io/bestrong-web-api:latest \
+                --docker-registry-server-url https://bestrong1acr1.azurecr.io \
+                --docker-registry-server-user $(DOCKER_USERNAME) \
+                --docker-registry-server-password $(DOCKER_PASSWORD)
+
+              az webapp restart \
+                --name $(APP_SERVICE_NAME) \
+                --resource-group $(RESOURCE_GROUP_NAME)
+
+              echo "Deployment successfully completed!"
+            displayName: Deploy to App Service
