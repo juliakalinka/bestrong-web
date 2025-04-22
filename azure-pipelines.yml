@@ -7,6 +7,11 @@ pr:
   branches:
     include:
       - main
+  paths:
+    include:
+      - 'ASPNETCore-WebAPI-Sample/**'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
 
 variables:
   - group: terraform-variables
