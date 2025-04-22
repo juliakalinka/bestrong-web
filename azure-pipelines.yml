@@ -20,7 +20,7 @@ pool:
 variables:
   imageRepository: 'bestrong1acr1.azurecr.io/bestrong-web-api'
   tag: '$(Build.BuildId)'
-  appServiceName: 'bestrong-app-service'
+  appServiceName: 'bestrong-app-service-bs2'
   resourceGroupName: 'bestrong-rg'
 
 stages:
