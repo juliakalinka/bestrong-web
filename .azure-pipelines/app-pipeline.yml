@@ -1,0 +1,79 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - 'ASPNETCore-WebAPI-Sample/**'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - '.azure-pipelines/app-pipeline.yml'
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  - name: imageRepository
+    value: 'bestrong-web-api'
+  - name: tag
+    value: '$(Build.BuildId)'
+  - name: appServiceName
+    value: 'bestrong-app-service'
+  - name: resourceGroupName
+    value: 'bestrong-rg'
+
+stages:
+  # Validation Stage (для PR та main)
+  - stage: Validate
+    displayName: 'Validate Application'
+    jobs:
+      - job: BuildAndTest
+        displayName: 'Build and Test'
+        steps:
+          - checkout: self
+          
+          # Збірка контейнера
+          - task: Docker@2
+            displayName: 'Build Docker Image'
+            inputs:
+              command: build
+              dockerfile: '$(System.DefaultWorkingDirectory)/Dockerfile'
+              tags: '$(tag)'
+              buildContext: $(System.DefaultWorkingDirectory)
+  
+  # Deploy Stage (тільки для main)
+  - stage: Deploy
+    displayName: 'Deploy Application'
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: DeployImage
+        displayName: 'Build and Deploy Image'
+        steps:
+          - checkout: self
+          
+          # Збірка та пуш Docker образу
+          - task: Docker@2
+            displayName: 'Build and Push Docker Image'
+            inputs:
+              containerRegistry: 'bestrong-acr-connection'
+              repository: $(imageRepository)
+              command: 'buildAndPush'
+              Dockerfile: '$(System.DefaultWorkingDirectory)/Dockerfile'
+              buildContext: $(System.DefaultWorkingDirectory)
+              tags: |
+                $(tag)
+                latest
+          
+          # Деплой в App Service
+          - task: AzureWebAppContainer@1
+            displayName: 'Deploy to Azure App Service'
+            inputs:
+              azureSubscription: 'bestrong-azure-connection'
+              appName: $(appServiceName)
+              resourceGroupName: $(resourceGroupName)
+              imageName: 'bestrongacr.azurecr.io/$(imageRepository):$(tag)' 
