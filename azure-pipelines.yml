@@ -43,6 +43,12 @@ stages:
                 -p $TF_VAR_client_secret \
                 --tenant $TF_VAR_tenant_id
 
+              echo "Assigning AcrPush role to SP..."
+              az role assignment create \
+                --assignee $TF_VAR_client_id \
+                --scope /subscriptions/$TF_VAR_subscription_id/resourceGroups/$RESOURCE_GROUP_NAME/providers/Microsoft.ContainerRegistry/registries/$ACR_NAME \
+                --role AcrPush || echo "Role may already exist"
+
               echo "Logging into ACR..."
               az acr login --name $ACR_NAME
 
@@ -56,6 +62,7 @@ stages:
               TF_VAR_client_id: $(TF_VAR_client_id)
               TF_VAR_client_secret: $(TF_VAR_client_secret)
               TF_VAR_tenant_id: $(TF_VAR_tenant_id)
+              TF_VAR_subscription_id: $(TF_VAR_subscription_id)
               ACR_NAME: $(ACR_NAME)
               IMAGE_NAME: $(IMAGE_NAME)
 
@@ -87,24 +94,21 @@ stages:
                 -p $TF_VAR_client_secret \
                 --tenant $TF_VAR_tenant_id
 
-              echo "Granting AcrPull role to App Service..."
-              APP_SERVICE_IDENTITY=$(az webapp identity show \
-                --name $APP_SERVICE_NAME \
-                --resource-group $RESOURCE_GROUP_NAME \
-                --query principalId -o tsv)
-
+              APP_SERVICE_IDENTITY=$(az webapp identity show --name $APP_SERVICE_NAME --resource-group $RESOURCE_GROUP_NAME --query principalId -o tsv)
+              
               az role assignment create \
                 --assignee $APP_SERVICE_IDENTITY \
                 --scope /subscriptions/$TF_VAR_subscription_id/resourceGroups/$RESOURCE_GROUP_NAME/providers/Microsoft.ContainerRegistry/registries/$ACR_NAME \
-                --role AcrPull || echo "Role already exists or assigned"
+                --role AcrPull || echo "Role may already exist"
 
-              echo "Configuring App Service container settings..."
               az webapp config container set \
                 --name $APP_SERVICE_NAME \
                 --resource-group $RESOURCE_GROUP_NAME \
-                --docker-custom-image-name $ACR_NAME.azurecr.io/$IMAGE_NAME:$(Build.BuildId)
+                --docker-custom-image-name $ACR_NAME.azurecr.io/$IMAGE_NAME:$(Build.BuildId) \
+                --docker-registry-server-url https://$ACR_NAME.azurecr.io \
+                --docker-registry-server-user $ACR_NAME \
+                --docker-registry-server-password $ACR_PASSWORD
 
-              echo "Restarting App Service..."
               az webapp restart \
                 --name $APP_SERVICE_NAME \
                 --resource-group $RESOURCE_GROUP_NAME
@@ -124,6 +128,7 @@ stages:
               TF_VAR_tenant_id: $(TF_VAR_tenant_id)
               TF_VAR_subscription_id: $(TF_VAR_subscription_id)
               ACR_NAME: $(ACR_NAME)
+              ACR_PASSWORD: $(ACR_PASSWORD)
               IMAGE_NAME: $(IMAGE_NAME)
-              APP_SERVICE_NAME: $(APP_SERVICE_NAME)
               RESOURCE_GROUP_NAME: $(RESOURCE_GROUP_NAME)
+              APP_SERVICE_NAME: $(APP_SERVICE_NAME)
