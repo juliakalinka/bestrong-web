@@ -27,17 +27,31 @@ stages:
         steps:
           - checkout: self
 
+          - task: DownloadSecureFile@1
+            name: envFile
+            displayName: 'Download .env file'
+            inputs:
+              secureFile: '.env'
+
           - script: |
+              echo "Loading environment variables from .env file..."
+              export $(cat $(envFile.secureFilePath) | grep -v '^#' | xargs)
+
+              echo "Logging into Azure..."
+              az login --service-principal \
+                -u $TF_VAR_client_id \
+                -p $TF_VAR_client_secret \
+                --tenant $TF_VAR_tenant_id
+
               echo "Logging into ACR..."
-              echo $(DOCKER_PASSWORD) | docker login bestrong1acr1.azurecr.io -u $(DOCKER_USERNAME) --password-stdin
+              az acr login --name $ACR_NAME
 
               echo "Building Docker image..."
-              docker build -t bestrong1acr1.azurecr.io/bestrong-web-api:latest .
+              docker build -t $ACR_NAME.azurecr.io/$IMAGE_NAME:$(Build.BuildId) .
 
               echo "Pushing Docker image..."
-              docker push bestrong1acr1.azurecr.io/bestrong-web-api:latest
-            displayName: Docker Login, Build & Push
-            condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+              docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:$(Build.BuildId)
+            displayName: Docker Build & Push
 
   - stage: Deploy
     displayName: Deploy to Azure App Service
@@ -67,18 +81,31 @@ stages:
                 -p $TF_VAR_client_secret \
                 --tenant $TF_VAR_tenant_id
 
-              echo "Deploying to App Service..."
+              APP_SERVICE_IDENTITY=$(az webapp identity show --name $APP_SERVICE_NAME --resource-group $RESOURCE_GROUP_NAME --query principalId -o tsv)
+              
+              az role assignment create \
+                --assignee $APP_SERVICE_IDENTITY \
+                --scope /subscriptions/$TF_VAR_subscription_id/resourceGroups/$RESOURCE_GROUP_NAME/providers/Microsoft.ContainerRegistry/registries/$ACR_NAME \
+                --role AcrPull
+
               az webapp config container set \
-                --name $(APP_SERVICE_NAME) \
-                --resource-group $(RESOURCE_GROUP_NAME) \
-                --docker-custom-image-name bestrong1acr1.azurecr.io/bestrong-web-api:latest \
-                --docker-registry-server-url https://bestrong1acr1.azurecr.io \
-                --docker-registry-server-user $(DOCKER_USERNAME) \
-                --docker-registry-server-password $(DOCKER_PASSWORD)
+                --name $APP_SERVICE_NAME \
+                --resource-group $RESOURCE_GROUP_NAME \
+                --docker-custom-image-name $ACR_NAME.azurecr.io/$IMAGE_NAME:$(Build.BuildId) \
+                --docker-registry-server-url https://$ACR_NAME.azurecr.io \
+                --docker-registry-server-user $ACR_NAME \
+                --docker-registry-server-password $ACR_PASSWORD
 
               az webapp restart \
-                --name $(APP_SERVICE_NAME) \
-                --resource-group $(RESOURCE_GROUP_NAME)
+                --name $APP_SERVICE_NAME \
+                --resource-group $RESOURCE_GROUP_NAME
 
-              echo "Deployment successfully completed!"
+              echo "Waiting for App Service to restart..."
+              sleep 30
+
+              APP_STATUS=$(az webapp show --name $APP_SERVICE_NAME --resource-group $RESOURCE_GROUP_NAME --query state -o tsv)
+              if [ "$APP_STATUS" != "Running" ]; then
+                echo "App Service is not running. Current status: $APP_STATUS"
+                exit 1
+              fi
             displayName: Deploy to App Service
