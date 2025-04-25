@@ -128,3 +128,5 @@ stages:
         ARM_CLIENT_SECRET: $(CLIENT_SECRET)
         ARM_TENANT_ID: $(TENANT_ID)
         ARM_SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)
+
+        # Fixing
