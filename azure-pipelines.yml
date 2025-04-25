@@ -34,15 +34,28 @@ stages:
       inputs:
         command: build
         dockerfile: $(dockerfilePath)
-        repository: $(imageRepository)
+        repository: $(acrName).azurecr.io/$(imageRepository)
         tags: |
           $(tag)
           latest
+    - task: Bash@3
+      displayName: 'Debug Variables'
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Tag: $(tag)"
+          echo "Image Repository: $(imageRepository)"
+    - task: Bash@3
+      displayName: 'Verify Docker Image'
+      inputs:
+        targetType: 'inline'
+        script: |
+          docker images | grep $(tag)
 
     - task: AzureCLI@2
       displayName: 'Login to Azure'
       inputs:
-        azureSubscription: 'bestrong-rg-connection'
+        azureSubscription: 'azure-service-connection'
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
