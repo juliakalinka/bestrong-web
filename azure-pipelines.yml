@@ -15,8 +15,12 @@ variables:
   - group: terraform-web-vars
   - name: dockerfilePath
     value: '$(Build.SourcesDirectory)/Dockerfile'
+  # - name: imageRepository
+  #   value: 'bestrong-web-api'
   - name: tag
     value: '$(Build.BuildId)'
+  # - name: acrName
+  #   value: 'bestrongacr1web'
 
 stages:
 - stage: Build
