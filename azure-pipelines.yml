@@ -38,7 +38,13 @@ stages:
         tags: |
           $(tag)
           latest
-
+    - task: Bash@3
+      displayName: 'Verify Docker Image'
+      inputs:
+        targetType: 'inline'
+        script: |
+          docker images
+          
     - task: AzureCLI@2
       displayName: 'Login to Azure'
       inputs:
