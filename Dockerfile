@@ -14,5 +14,4 @@ WORKDIR /app
 COPY --from=publish /app/publish .
 ENV ASPNETCORE_ENVIRONMENT=Production
 EXPOSE 80
-EXPOSE 443
 ENTRYPOINT ["dotnet", "SampleWebApiAspNetCore.dll"]
