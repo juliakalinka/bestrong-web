@@ -172,3 +172,4 @@ stages:
           if [ "$STATUS" != "200" ]; then
             echo "Application might have issues. Please check logs."
           fi
+#Test
