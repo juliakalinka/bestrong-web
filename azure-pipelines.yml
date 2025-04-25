@@ -15,12 +15,8 @@ variables:
   - group: terraform-web-vars
   - name: dockerfilePath
     value: '$(Build.SourcesDirectory)/Dockerfile'
-  # - name: imageRepository
-  #   value: 'bestrong-web-api'
   - name: tag
     value: '$(Build.BuildId)'
-  # - name: acrName
-  #   value: 'bestrongacr1web'
 
 stages:
 - stage: Build
@@ -38,19 +34,6 @@ stages:
         tags: |
           $(tag)
           latest
-    - task: Bash@3
-      displayName: 'Debug Variables'
-      inputs:
-        targetType: 'inline'
-        script: |
-          echo "Tag: $(tag)"
-          echo "Image Repository: $(imageRepository)"
-    - task: Bash@3
-      displayName: 'Verify Docker Image'
-      inputs:
-        targetType: 'inline'
-        script: |
-          docker images | grep $(tag)
 
     - task: AzureCLI@2
       displayName: 'Login to Azure'
@@ -85,90 +68,17 @@ stages:
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          # Make sure the App Service exists
-          APP_EXISTS=$(az webapp list --resource-group $(resourceGroup) --query "[?name=='$(appServiceName)'].name" -o tsv)
-          
-          if [ -z "$APP_EXISTS" ]; then
-            echo "Creating new App Service..."
-            # Create App Service Plan if it doesn't exist
-            PLAN_EXISTS=$(az appservice plan list --resource-group $(resourceGroup) --query "[?name=='bestrong-app-plan'].name" -o tsv)
-            if [ -z "$PLAN_EXISTS" ]; then
-              echo "Creating App Service Plan..."
-              az appservice plan create \
-                --name bestrong-app-plan \
-                --resource-group $(resourceGroup) \
-                --sku B1 \
-                --is-linux
-            fi
-            
-            # Create Web App for Containers
-            az webapp create \
-              --resource-group $(resourceGroup) \
-              --plan bestrong-app-plan \
-              --name $(appServiceName) \
-              --deployment-container-image-name $(acrName).azurecr.io/$(imageRepository):$(tag)
-              
-            # Configure the container settings
-            az webapp config container set \
-              --name $(appServiceName) \
-              --resource-group $(resourceGroup) \
-              --docker-custom-image-name $(acrName).azurecr.io/$(imageRepository):$(tag) \
-              --docker-registry-server-url https://$(acrName).azurecr.io
-          else
-            echo "App Service exists, updating container image..."
-            # Update existing App Service to use new container image
-            az webapp config container set \
-              --name $(appServiceName) \
-              --resource-group $(resourceGroup) \
-              --docker-custom-image-name $(acrName).azurecr.io/$(imageRepository):$(tag) \
-              --docker-registry-server-url https://$(acrName).azurecr.io
-          fi
-          
-          # Configure ACR authentication for the App Service
-          ACR_USERNAME=$(az acr credential show -n $(acrName) --query username -o tsv)
-          ACR_PASSWORD=$(az acr credential show -n $(acrName) --query "passwords[0].value" -o tsv)
-          
-          az webapp config appsettings set \
-            --resource-group $(resourceGroup) \
+          # Update existing App Service to use new container image
+          echo "Updating App Service to use new container image..."
+          az webapp config container set \
             --name $(appServiceName) \
-            --settings \
-              DOCKER_REGISTRY_SERVER_URL=https://$(acrName).azurecr.io \
-              DOCKER_REGISTRY_SERVER_USERNAME=$ACR_USERNAME \
-              DOCKER_REGISTRY_SERVER_PASSWORD=$ACR_PASSWORD \
-              WEBSITES_PORT=80
-          
+            --resource-group $(resourceGroup) \
+            --docker-custom-image-name $(acrName).azurecr.io/$(imageRepository):$(tag) \
+            --docker-registry-server-url https://$(acrName).azurecr.io
+            
           # Restart the app to apply changes
           az webapp restart --name $(appServiceName) --resource-group $(resourceGroup)
           
           # Display the app URL
           APP_URL=$(az webapp show --name $(appServiceName) --resource-group $(resourceGroup) --query defaultHostName -o tsv)
           echo "App deployed to: https://$APP_URL"
-    
-    - task: AzureCLI@2
-      displayName: 'Verify Deployment'
-      inputs:
-        azureSubscription: 'azure-service-connection'
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
-          APP_URL=$(az webapp show --name $(appServiceName) --resource-group $(resourceGroup) --query defaultHostName -o tsv)
-          echo "Waiting for application to be available at https://$APP_URL"
-          
-          # Try to access the API several times
-          for i in {1..15}; do
-            echo "Attempt $i: Checking if application is running..."
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://$APP_URL/api/values || echo "Failed")
-            
-            if [ "$STATUS" == "200" ]; then
-              echo "Application is available!"
-              break
-            fi
-            
-            echo "Application is not ready yet (status: $STATUS), waiting..."
-            sleep 20
-          done
-          
-          echo "Final status check: $STATUS"
-          if [ "$STATUS" != "200" ]; then
-            echo "Application might have issues. Please check logs."
-          fi
