@@ -65,7 +65,7 @@ variable "web_app_name" {
 variable "environment" {
   description = "Environment (Development, Staging, Production)"
   type        = string
-  default     = "Production"
+  default     = "Development"
 }
 
 variable "docker_image_name" {
@@ -78,7 +78,7 @@ variable "tags" {
   description = "Tags for resources"
   type        = map(string)
   default = {
-    Environment = "Production"
+    Environment = "Developmnet"
     Project     = "BeStrong"
     ManagedBy   = "Terraform"
   }
