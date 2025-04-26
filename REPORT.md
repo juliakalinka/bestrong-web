@@ -40,6 +40,7 @@ Step 8: Testing Swagger
 ![swagger v2](/images/swagger_v2.png)
 
 Step 9: docker-compose
+
 ![build docker compose](/images/build_compose.png)
 ![test docker compose](/images/test_compose1.png)
 ![test docker compose](/images/test_compose2.png)
