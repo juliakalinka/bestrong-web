@@ -1,3 +1,5 @@
+**Homework 17.04**
+
 1. You need to create your own repo in Github and clone https://github.com/FabianGosebrink/ASPNETCore-WebAPI-Sample
 2. Create one Dockerfile that will build application and run it.
 3. Create dockercompose file that will inlude build (use local build context) and run stages, for local testing purposes, commit this file to repo.
