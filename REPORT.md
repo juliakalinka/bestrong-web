@@ -36,3 +36,8 @@ Step 7: Testing API
 Step 8: Testing Swagger
 ![swagger v1](/images/swagger_v1.png)
 ![swagger v2](/images/swagger_v2.png)
+
+Step 9: docker-compose
+![build docker compose](/images/build_compose.png)
+![test docker compose](/images/test_compose1.png)
+![test docker compose](/images/test_compose2.png)
