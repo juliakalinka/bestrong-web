@@ -1,3 +1,5 @@
+**Homework 17.04**
+
 1. You need to create your own repo in Github and clone https://github.com/FabianGosebrink/ASPNETCore-WebAPI-Sample
 2. Create one Dockerfile that will build application and run it.
 3. Create dockercompose file that will inlude build (use local build context) and run stages, for local testing purposes, commit this file to repo.
@@ -36,8 +38,3 @@ Step 7: Testing API
 Step 8: Testing Swagger
 ![swagger v1](/images/swagger_v1.png)
 ![swagger v2](/images/swagger_v2.png)
-
-Step 9: docker-compose
-![build docker compose](/images/build_compose.png)
-![test docker compose](/images/test_compose1.png)
-![test docker compose](/images/test_compose2.png)
