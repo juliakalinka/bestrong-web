@@ -21,8 +21,6 @@ variables:
     value: '$(Build.BuildId)'
   - name: acrName
     value: 'bestrongacr1web'
-  - name: webAppName
-    value: 'bestrong-web-app'
 
 stages:
 - stage: Build
