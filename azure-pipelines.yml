@@ -114,3 +114,4 @@ stages:
             echo "Application might have issues. Displaying logs:"
             az webapp log tail --name $(webAppName) --resource-group bestrong-app-rg --lines 50
           fi
+# Test
