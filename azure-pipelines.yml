@@ -21,7 +21,7 @@ variables:
     value: '$(Build.BuildId)'
   - name: acrName
     value: 'bestrongacr1web'
-
+# Build and Push
 stages:
 - stage: Build
   displayName: 'Build and Push Docker Image'
@@ -72,7 +72,7 @@ stages:
         tags: |
           $(tag)
           latest
-
+# Deploy
 - stage: Deploy
   displayName: 'Deploy to Azure App Service'
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
