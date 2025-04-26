@@ -38,7 +38,8 @@ stages:
         repository: $(acrName).azurecr.io/$(imageRepository)
         tags: |
           $(tag)
-          
+          latest
+
     - task: Bash@3
       displayName: 'Debug Variables'
       inputs:
