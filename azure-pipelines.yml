@@ -34,10 +34,11 @@ stages:
       inputs:
         command: build
         dockerfile: $(dockerfilePath)
+        buildContext: '$(Build.SourcesDirectory)/ASPNETCore-WebAPI-Sample'
         repository: $(acrName).azurecr.io/$(imageRepository)
         tags: |
           $(tag)
-          latest
+          
     - task: Bash@3
       displayName: 'Debug Variables'
       inputs:
@@ -114,4 +115,3 @@ stages:
             echo "Application might have issues. Displaying logs:"
             az webapp log tail --name $(webAppName) --resource-group bestrong-app-rg --lines 50
           fi
-# Test
